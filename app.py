@@ -3,7 +3,6 @@ import json
 import os
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
 
 FILE_NAME = "records.json"
 
@@ -28,7 +27,7 @@ def load_records():
 
         return records
 
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, FileNotFoundError):
         return []
 
 
@@ -42,12 +41,16 @@ def save_records(records):
 if "records" not in st.session_state:
     st.session_state.records = load_records()
 
+if "confirm_delete" not in st.session_state:
+    st.session_state.confirm_delete = False
+
 records = st.session_state.records
 
 
 # 網頁標題
-st.title("🥤 班級飲料訂購系統")
+st.title("班級飲料訂購系統")
 st.caption("Class Drink Order System")
+
 
 # 側邊欄選單
 menu = st.sidebar.radio(
@@ -56,7 +59,10 @@ menu = st.sidebar.radio(
 )
 
 
+# ==========================
 # 新增訂單
+# ==========================
+
 if menu == "新增訂單":
 
     st.header("新增飲料訂單")
@@ -98,34 +104,18 @@ if menu == "新增訂單":
                     "price": float(price)
                 }
 
-                records.append(order)
+                st.session_state.records.append(order)
 
-                save_records(records)
+                save_records(st.session_state.records)
 
                 st.success("訂購成功！")
 
 
+# ==========================
 # 查看訂單
+# ==========================
+
 elif menu == "訂購紀錄":
-
-    if records:
-
-    st.dataframe(records, use_container_width=True)
-
-    st.write(f"目前共有 {len(records)} 筆訂單")
-
-    if st.button("清空所有訂單", type="primary"):
-
-        st.session_state.records = []
-        records = []
-
-        save_records(records)
-
-        st.success("所有訂單已清空！")
-        st.rerun()
-
-else:
-    st.info("目前沒有訂購紀錄。")
 
     st.header("訂購紀錄")
 
@@ -138,11 +128,43 @@ else:
 
         st.write(f"目前共有 {len(records)} 筆訂單")
 
+        # 清空訂單
+        if st.button("清空所有訂單", type="primary"):
+
+            st.session_state.confirm_delete = True
+
+        # 二次確認
+        if st.session_state.confirm_delete:
+
+            st.warning("確定要清空所有訂單嗎？此操作無法復原！")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                if st.button("確定清空"):
+
+                    st.session_state.records = []
+                    st.session_state.confirm_delete = False
+
+                    save_records([])
+
+                    st.success("所有訂單已清空！")
+                    st.rerun()
+
+            with col2:
+                if st.button("取消"):
+
+                    st.session_state.confirm_delete = False
+                    st.rerun()
+
     else:
         st.info("目前沒有訂購紀錄。")
 
 
+# ==========================
 # 金額統計
+# ==========================
+
 elif menu == "金額統計":
 
     st.header("金額統計")
@@ -154,17 +176,32 @@ elif menu == "金額統計":
         )
 
         col1, col2 = st.columns(2)
+
+        col1.metric(
+            "訂單數量",
+            len(records)
+        )
+
+        col2.metric(
+            "總金額",
+            f"{np.sum(prices):.0f} 元"
+        )
+
         col3, col4 = st.columns(2)
 
-        col1.metric("訂單數量", len(records))
-        col2.metric("總金額", f"{np.sum(prices):.0f} 元")
+        col3.metric(
+            "平均金額",
+            f"{np.mean(prices):.2f} 元"
+        )
 
-        col3.metric("平均金額", f"{np.mean(prices):.2f} 元")
-        col4.metric("最高金額", f"{np.max(prices):.0f} 元")
+        col4.metric(
+            "最高金額",
+            f"{np.max(prices):.0f} 元"
+        )
 
-        st.write(f"最低金額：{np.min(prices):.0f} 元")
+        st.write(
+            f"最低金額：{np.min(prices):.0f} 元"
+        )
 
     else:
         st.info("目前沒有訂購紀錄。")
-
-
