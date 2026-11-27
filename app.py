@@ -52,7 +52,7 @@ st.caption("Class Drink Order System")
 # 側邊欄選單
 menu = st.sidebar.radio(
     "功能選單",
-    ["新增訂單", "訂購紀錄", "金額統計", "統計圖表"]
+    ["新增訂單", "訂購紀錄", "金額統計"]
 )
 
 
@@ -108,6 +108,25 @@ if menu == "新增訂單":
 # 查看訂單
 elif menu == "訂購紀錄":
 
+    if records:
+
+    st.dataframe(records, use_container_width=True)
+
+    st.write(f"目前共有 {len(records)} 筆訂單")
+
+    if st.button("清空所有訂單", type="primary"):
+
+        st.session_state.records = []
+        records = []
+
+        save_records(records)
+
+        st.success("所有訂單已清空！")
+        st.rerun()
+
+else:
+    st.info("目前沒有訂購紀錄。")
+
     st.header("訂購紀錄")
 
     if records:
@@ -149,34 +168,3 @@ elif menu == "金額統計":
         st.info("目前沒有訂購紀錄。")
 
 
-# 統計圖表
-elif menu == "統計圖表":
-
-    st.header("個人訂購金額統計")
-
-    if records:
-
-        totals = {}
-
-        for order in records:
-            name = order["name"]
-            totals[name] = totals.get(name, 0) + order["price"]
-
-        names = list(totals.keys())
-        prices = np.array(list(totals.values()))
-
-        fig, ax = plt.subplots(figsize=(10, 5))
-
-        ax.bar(names, prices)
-
-        ax.set_title("Class Drink Order Statistics")
-        ax.set_xlabel("Name")
-        ax.set_ylabel("Total Price")
-
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-
-        st.pyplot(fig)
-
-    else:
-        st.info("目前沒有訂購紀錄。")
